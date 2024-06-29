@@ -1,6 +1,6 @@
 tweepy
 requests
-smtplib
 beautifulsoup4
 transformers
 apscheduler
+python-dotenv

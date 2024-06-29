@@ -8,6 +8,10 @@ from email.mime.multipart import MIMEMultipart
 from bs4 import BeautifulSoup
 from transformers import pipeline
 from apscheduler.schedulers.blocking import BlockingScheduler
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Setup environment variables for credentials
 TWITTER_BEARER_TOKEN = os.getenv('TWITTER_BEARER_TOKEN')
