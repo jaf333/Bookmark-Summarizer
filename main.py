@@ -39,8 +39,10 @@ def send_email(subject, body, to_email):
 def fetch_recent_bookmarks():
     response = client.get_bookmarks(max_results=100)
     bookmarks = response.data
+    print(f"Bookmarks fetched: {bookmarks}")
     recent_bookmarks = [tweet for tweet in bookmarks if (time.time() - tweet.created_at.timestamp()) < 86400]
     return recent_bookmarks
+
 
 def extract_urls(bookmarks):
     urls = []
@@ -91,5 +93,8 @@ def schedule_daily_task():
     scheduler.add_job(send_summary_email, 'interval', hours=24)
     scheduler.start()
 
+def test_script():
+    send_summary_email()
+
 if __name__ == "__main__":
-    schedule_daily_task()
+    test_script()
