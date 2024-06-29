@@ -36,15 +36,27 @@ def callback():
 def bookmarks():
     access_token = session.get('access_token')
     client = tweepy.Client(bearer_token=access_token)
-    # Now you can call the main functionality to fetch bookmarks
-    fetch_recent_bookmarks(client)
-    return "Bookmarks fetched successfully!"
+    bookmarks = fetch_recent_bookmarks(client)
+    # Call the main functionality to process bookmarks and send the email
+    send_summary_email(client, bookmarks)
+    return "Bookmarks fetched and email sent successfully!"
 
 def fetch_recent_bookmarks(client):
     response = client.get_bookmarks(max_results=100)
     bookmarks = response.data
     recent_bookmarks = [tweet for tweet in bookmarks if (time.time() - tweet.created_at.timestamp()) < 86400]
     return recent_bookmarks
+
+def send_summary_email(client, bookmarks):
+    urls = extract_urls(bookmarks)
+    summaries = []
+    for url in urls:
+        html_content = fetch_html_content(url)
+        if html_content and is_article(html_content):
+            summary = generate_summary(html_content)
+            summaries.append(summary)
+    email_body = compose_email(bookmarks, summaries)
+    send_email("Your Daily Twitter Bookmarks Summary", email_body, os.getenv('EMAIL_ADDRESS'))
 
 if __name__ == "__main__":
     app.run(debug=True)
