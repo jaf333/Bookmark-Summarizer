@@ -10,16 +10,7 @@ from transformers import pipeline
 from apscheduler.schedulers.blocking import BlockingScheduler
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
 load_dotenv()
-
-# Setup environment variables for credentials
-TWITTER_BEARER_TOKEN = os.getenv('TWITTER_BEARER_TOKEN')
-EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
-EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD')
-
-# Initialize Twitter API client
-client = tweepy.Client(bearer_token=TWITTER_BEARER_TOKEN)
 
 # Initialize summary generator
 summarizer = pipeline("summarization")
@@ -27,22 +18,20 @@ summarizer = pipeline("summarization")
 # Email setup
 def send_email(subject, body, to_email):
     msg = MIMEMultipart()
-    msg['From'] = EMAIL_ADDRESS
+    msg['From'] = os.getenv('EMAIL_ADDRESS')
     msg['To'] = to_email
     msg['Subject'] = subject
     msg.attach(MIMEText(body, 'html'))
     with smtplib.SMTP('smtp.gmail.com', 587) as server:
         server.starttls()
-        server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+        server.login(os.getenv('EMAIL_ADDRESS'), os.getenv('EMAIL_PASSWORD'))
         server.send_message(msg)
 
-def fetch_recent_bookmarks():
+def fetch_recent_bookmarks(client):
     response = client.get_bookmarks(max_results=100)
     bookmarks = response.data
-    print(f"Bookmarks fetched: {bookmarks}")
     recent_bookmarks = [tweet for tweet in bookmarks if (time.time() - tweet.created_at.timestamp()) < 86400]
     return recent_bookmarks
-
 
 def extract_urls(bookmarks):
     urls = []
@@ -76,8 +65,8 @@ def compose_email(bookmarks, summaries):
     email_content += "</ul>"
     return email_content
 
-def send_summary_email():
-    bookmarks = fetch_recent_bookmarks()
+def send_summary_email(client):
+    bookmarks = fetch_recent_bookmarks(client)
     urls = extract_urls(bookmarks)
     summaries = []
     for url in urls:
@@ -86,7 +75,7 @@ def send_summary_email():
             summary = generate_summary(html_content)
             summaries.append(summary)
     email_body = compose_email(bookmarks, summaries)
-    send_email("Your Daily Twitter Bookmarks Summary", email_body, EMAIL_ADDRESS)
+    send_email("Your Daily Twitter Bookmarks Summary", email_body, os.getenv('EMAIL_ADDRESS'))
 
 def schedule_daily_task():
     scheduler = BlockingScheduler()
@@ -94,7 +83,8 @@ def schedule_daily_task():
     scheduler.start()
 
 def test_script():
-    send_summary_email()
+    client = tweepy.Client(bearer_token=os.getenv('TWITTER_BEARER_TOKEN'))
+    send_summary_email(client)
 
 if __name__ == "__main__":
     test_script()
